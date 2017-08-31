@@ -2,6 +2,7 @@ import fetch from "node-fetch"
 import semver from "semver"
 import fs from "fs-extra"
 import { readPackageJSONFromArchive } from "./utils"
+import util from "util"
 
 async function fetchPackage({name, reference}) {
   // reference is a local file path
@@ -59,7 +60,48 @@ async function getPackageDependencies({name, reference}) {
   })
 }
 
-getPackageDependencies({name: "prop-types", reference: "^15.5.10"})
-  .then(deps => {
-    console.log(deps)
-  })
+// recursive function
+// input: {name, reference, dependencies: [{name, reference}]}
+// output: {name, reference, expanded_dependencies: [{name, reference, dependencies}]}
+async function getPackageDependencyTree({name, reference, dependencies}, available = new Map()) {
+  console.log(available)
+  return {
+    name,
+    reference,
+    dependencies: await Promise.all(dependencies.filter(dep => {
+      const availableReference = available.get(dep.name)
+
+      // exact match
+      if(availableReference === dep.reference) {
+        return false
+      }
+
+      if(semver.validRange(dep.reference) &&
+        semver.satisfies(availableReference, dep.reference)) {
+        return false
+      }
+
+      return true
+    }).map(async dep => {
+      const pinnedDep = await getPinnedReference(dep)
+      const subDependencies = await getPackageDependencies(pinnedDep)
+      const subAvailable = new Map(available)
+      subAvailable.set(pinnedDep.name, pinnedDep.reference)
+      return getPackageDependencyTree(Object.assign({}, pinnedDep, {dependencies: subDependencies}), subAvailable)
+    }))
+  }
+}
+
+const test = {
+  "name": "my-awesome-package",
+  "dependencies": [
+    {
+      name: "babel-core",
+      reference: "*",
+    },
+  ],
+}
+
+getPackageDependencyTree(test).then(tree => {
+  console.log(util.inspect(tree, {depth: Infinity}))
+})
