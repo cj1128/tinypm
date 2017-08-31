@@ -1,0 +1,17 @@
+{
+  "name": "tinypm",
+  "version": "1.0.0",
+  "main": "index.js",
+  "author": "CJ Ting <fatelovely1128@gmail.com>",
+  "scripts": {
+    "start": "babel-node main.js"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "babel-cli": "^6.26.0",
+    "babel-preset-env": "^1.6.0",
+    "fs-extra": "^4.0.1",
+    "node-fetch": "^1.7.2",
+    "semver": "^5.4.1"
+  }
+}
