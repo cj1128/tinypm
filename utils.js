@@ -1,8 +1,9 @@
 import gunzipMaybe from "gunzip-maybe"
 import tar from "tar-stream"
+import tarFs from "tar-fs"
 
 export function readPackageJSONFromArchive(buffer) {
-  return readFileFromArchive("package.json", buffer, {virtualPath: 1})
+  return readFileFromArchive("package.json", buffer, 1)
 }
 
 function getFileName(entryName, virtualPath) {
@@ -17,7 +18,7 @@ function getFileName(entryName, virtualPath) {
   return entryName
 }
 
-export function readFileFromArchive(fileName, buffer, {virtualPath = 0} = {}) {
+export function readFileFromArchive(fileName, buffer, virtualPath = 0) {
   return new Promise(function(resolve, reject) {
     const extractor = tar.extract()
 
@@ -45,4 +46,24 @@ export function readFileFromArchive(fileName, buffer, {virtualPath = 0} = {}) {
     gunzipper.write(buffer)
     gunzipper.end()
   })
+}
+
+export function extractArchiveTo(buffer, target, virtualPath = 0) {
+  return new Promise((resolve, reject) => {
+    const map = header => {
+      header.name = getFileName(header.name, virtualPath)
+      return header
+    }
+    const gunzipper = gunzipMaybe()
+    const extractor = tarFs.extract(target, {map})
+    gunzipper.pipe(extractor)
+    extractor.on("error", err => reject(err))
+    extractor.on("finish", resolve)
+    gunzipper.write(buffer)
+    gunzipper.end()
+  })
+}
+
+export function extractNpmArchiveTo(buffer, target) {
+  return extractArchiveTo(buffer, target, 1)
 }
