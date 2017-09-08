@@ -1,7 +1,8 @@
-var gunzipMaybe = require("gunzip-maybe")
-var tar = require("tar-stream")
-var semver = require("semver")
-var tarFs = require("tar-fs")
+const gunzipMaybe = require("gunzip-maybe")
+const tar = require("tar-stream")
+const semver = require("semver")
+const tarFs = require("tar-fs")
+const Progress = require("progress")
 
 module.exports.isPinnedReference = ref => !semver.validRange(ref) && semver.valid(ref)
 
@@ -11,6 +12,18 @@ module.exports.readPackageJSONFromArchive = function(buffer) {
 
 module.exports.extractNpmArchiveTo = function(buffer, target) {
   return extractArchiveTo(buffer, target, 1)
+}
+
+module.exports.trackProgress = async function(cb) {
+  const progress = new Progress(`:bar :current/:total (:elapseds)`, {width: 80, total: 1})
+  try {
+    return await cb(progress)
+  } finally {
+    if (!progress.complete) {
+      progress.update(1)
+      progress.terminate()
+    }
+  }
 }
 
 function readFileFromArchive(fileName, buffer, virtualPath = 0) {

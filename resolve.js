@@ -2,7 +2,7 @@ const { readPackageJSONFromArchive } = require("./utils")
 const { isPinnedReference } = require("./utils")
 const semver = require("semver")
 const fetch = require("node-fetch")
-const fetchPackage = require("./fetch")
+const { fetchPackage } = require("./fetch")
 
 async function getPinnedReference({name, reference}) {
   // we only process range, e.g. ^1.5.2
@@ -35,7 +35,7 @@ async function getPackageDependencies({name, reference}) {
 // recursive function
 // input: {name, reference, dependencies: [{name, reference}]}
 // output: {name, reference, expanded_dependencies: [{name, reference, dependencies}]}
-module.exports = async function getPackageDependencyTree({name, reference, dependencies}, available = new Map()) {
+module.exports = async function getPackageDependencyTree(progress, {name, reference, dependencies}, available = new Map()) {
   return {
     name,
     reference,
@@ -55,11 +55,16 @@ module.exports = async function getPackageDependencyTree({name, reference, depen
 
       return true
     }).map(async dep => {
+      progress.total += 1
+
       const pinnedDep = await getPinnedReference(dep)
       const subDependencies = await getPackageDependencies(pinnedDep)
+
+      progress.tick()
+
       const subAvailable = new Map(available)
       subAvailable.set(pinnedDep.name, pinnedDep.reference)
-      return getPackageDependencyTree(Object.assign({}, pinnedDep, {dependencies: subDependencies}), subAvailable)
+      return getPackageDependencyTree(progress, Object.assign({}, pinnedDep, {dependencies: subDependencies}), subAvailable)
     }))
   }
 }
