@@ -1,24 +1,19 @@
-import gunzipMaybe from "gunzip-maybe"
-import tar from "tar-stream"
-import tarFs from "tar-fs"
+var gunzipMaybe = require("gunzip-maybe")
+var tar = require("tar-stream")
+var semver = require("semver")
+var tarFs = require("tar-fs")
 
-export function readPackageJSONFromArchive(buffer) {
+module.exports.isPinnedReference = ref => !semver.validRange(ref) && semver.valid(ref)
+
+module.exports.readPackageJSONFromArchive = function(buffer) {
   return readFileFromArchive("package.json", buffer, 1)
 }
 
-function getFileName(entryName, virtualPath) {
-  entryName = entryName.replace(/^\/+/, "")
-  for(let i = 0; i < virtualPath; i++) {
-    const index = entryName.indexOf("/")
-    if(index === -1) {
-      return null
-    }
-    entryName = entryName.substr(index + 1)
-  }
-  return entryName
+module.exports.extractNpmArchiveTo = function(buffer, target) {
+  return extractArchiveTo(buffer, target, 1)
 }
 
-export function readFileFromArchive(fileName, buffer, virtualPath = 0) {
+function readFileFromArchive(fileName, buffer, virtualPath = 0) {
   return new Promise(function(resolve, reject) {
     const extractor = tar.extract()
 
@@ -48,7 +43,7 @@ export function readFileFromArchive(fileName, buffer, virtualPath = 0) {
   })
 }
 
-export function extractArchiveTo(buffer, target, virtualPath = 0) {
+function extractArchiveTo(buffer, target, virtualPath = 0) {
   return new Promise((resolve, reject) => {
     const map = header => {
       header.name = getFileName(header.name, virtualPath)
@@ -64,6 +59,15 @@ export function extractArchiveTo(buffer, target, virtualPath = 0) {
   })
 }
 
-export function extractNpmArchiveTo(buffer, target) {
-  return extractArchiveTo(buffer, target, 1)
+
+function getFileName(entryName, virtualPath) {
+  entryName = entryName.replace(/^\/+/, "")
+  for(let i = 0; i < virtualPath; i++) {
+    const index = entryName.indexOf("/")
+    if(index === -1) {
+      return null
+    }
+    entryName = entryName.substr(index + 1)
+  }
+  return entryName
 }
