@@ -1,10 +1,7 @@
-const cp = require("child_process")
-const util = require("util")
-const exec = util.promisify(cp.exec)
 const fs = require("fs-extra")
 const { fetchPackage } = require("./fetch")
 const { resolve, relative, join } = require("path")
-const { extractNpmArchiveTo } = require("./utils")
+const { extractNpmArchiveTo, exec } = require("./utils")
 
 async function linkPackage(progress, {name, reference}, cwd) {
   progress.total += 1

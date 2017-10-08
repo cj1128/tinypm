@@ -5,9 +5,10 @@ const linkPackages = require("./link")
 const path = require("path")
 const log = console.log
 const chalk = require("chalk")
-const fs = require("fs")
+const fs = require("fs-extra")
 const { trackProgress } = require("./utils")
 const { fetchPackages } = require("./fetch")
+const ElapstedTime = require("elapsed-time")
 
 // for debug
 process.on("unhandledRejection", (reason, p) => {
@@ -33,6 +34,7 @@ if(!fs.existsSync(packageJSONPath)) {
 
 const packageJSON = require(path.resolve(cwd, "package.json"))
 
+// process dependencies
 packageJSON.dependencies = Object.keys(packageJSON.dependencies || {}).map(name => {
   return {
     name,
@@ -40,18 +42,31 @@ packageJSON.dependencies = Object.keys(packageJSON.dependencies || {}).map(name 
   }
 })
 
+// process dev dependencies
+Object.keys(packageJSON.devDependencies || {}).forEach(name => {
+  packageJSON.dependencies.push({
+    name,
+    reference: packageJSON.devDependencies[name],
+  })
+})
+
+const et = ElapstedTime.new().start()
+
 Promise.resolve()
   .then(() => {
-    log(chalk.cyan("[1/4] 🔎  Resolving packages..."))
+    log("[1/3] 🔎  Resolving packages...")
     return trackProgress(progress => getPackageDependencyTree(progress, packageJSON))
   })
   .then(optimizePackageTree)
   .then(async tree => {
-    console.log(chalk.cyan("[2/4] 🚢  Fetching packages..."))
+    log("[2/3] 🚢  Fetching packages...")
     await trackProgress(progress => fetchPackages(progress, tree))
     return tree
   })
   .then(tree => {
-    console.log(chalk.cyan("[3/4] 🔗  Linking packages..."))
+    log("[3/3] 🔗  Linking packages...")
     return trackProgress(progress => linkPackages(progress, tree, cwd))
+  })
+  .then(() => {
+    log(` ✨  ${chalk.green("Done")} in ${et.getValue()}.`)
   })

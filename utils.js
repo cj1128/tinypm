@@ -3,6 +3,10 @@ const tar = require("tar-stream")
 const semver = require("semver")
 const tarFs = require("tar-fs")
 const Progress = require("progress")
+const cp = require("child_process")
+const util = require("util")
+
+module.exports.exec = util.promisify(cp.exec)
 
 module.exports.isPinnedReference = ref => !semver.validRange(ref) && semver.valid(ref)
 
@@ -15,7 +19,11 @@ module.exports.extractNpmArchiveTo = function(buffer, target) {
 }
 
 module.exports.trackProgress = async function(cb) {
-  const progress = new Progress(`:bar :current/:total (:elapseds)`, {width: 80, total: 1})
+  const progress = new Progress(`:bar :current/:total (:elapseds)`, {
+    width: 80,
+    total: 1,
+    clear: true,
+  })
   try {
     return await cb(progress)
   } finally {
@@ -71,7 +79,6 @@ function extractArchiveTo(buffer, target, virtualPath = 0) {
     gunzipper.end()
   })
 }
-
 
 function getFileName(entryName, virtualPath) {
   entryName = entryName.replace(/^\/+/, "")

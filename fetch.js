@@ -1,14 +1,20 @@
 const { isPinnedReference } = require("./utils")
+const cp = require("child_process")
 const assert = require("assert")
 const fetch = require("node-fetch")
 const fs = require("fs-extra")
 const path = require("path")
+const url = require("url")
 
 const CACHE_DIR = "/tmp/.tinypm"
 
 if(!fs.existsSync(CACHE_DIR)) {
   fs.mkdirSync(CACHE_DIR)
 }
+
+// get npm registry
+const DEFAULT_NPM_REGISTRY = "https://registry.yarnpkg.com"
+const NPM_REGISTRY = cp.execSync("npm config get registry").toString("utf8") || DEFAULT_NPM_REGISTRY
 
 async function fetchPackage({name, reference}) {
   // reference is a local file path
@@ -23,9 +29,9 @@ async function fetchPackage({name, reference}) {
   let buffer = await fetchInCache({name, reference})
   if(buffer != null) return buffer
 
-  const url = `https://registry.yarnpkg.com/${name}/-/${name}-${reference}.tgz`
+  const packageURL = url.resolve(NPM_REGISTRY, `/${name}/-/${name}-${reference}.tgz`)
 
-  const res = await fetch(url)
+  const res = await fetch(packageURL)
 
   if(!res.ok) {
     throw new Error("Could not fetch package ${reference}")
@@ -59,6 +65,8 @@ async function fetchInCache({name, reference}) {
 
 async function writeCache(buffer, {name, reference}) {
   const p = getCachePath(name, reference)
+  // name may contain '/', like @cj/package
+  fs.mkdirpSync(path.dirname(p))
   await fs.writeFile(p, buffer)
 }
 
@@ -69,4 +77,5 @@ function getCachePath(name, reference) {
 module.exports = {
   fetchPackage,
   fetchPackages,
+  NPM_REGISTRY,
 }

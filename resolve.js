@@ -2,13 +2,14 @@ const { readPackageJSONFromArchive } = require("./utils")
 const { isPinnedReference } = require("./utils")
 const semver = require("semver")
 const fetch = require("node-fetch")
-const { fetchPackage } = require("./fetch")
+const { fetchPackage, NPM_REGISTRY } = require("./fetch")
+const url = require("url")
 
 async function getPinnedReference({name, reference}) {
   // we only process range, e.g. ^1.5.2
   // pinned version is a valid range in semver eyes
   if(!isPinnedReference(reference)) {
-    const res = await fetch(`https://registry.yarnpkg.com/${name}`)
+    const res = await fetch(url.resolve(NPM_REGISTRY, name))
     const info = await res.json()
     const versions = Object.keys(info.versions)
     const maxSatisfying = semver.maxSatisfying(versions, reference)
