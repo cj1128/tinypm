@@ -1,42 +1,16 @@
-const { readPackageJSONFromArchive } = require("./utils")
-const { isPinnedReference } = require("./utils")
+const {
+  readPackageJSONFromArchive,
+  isPinnedReference,
+  transformDependencies,
+} = require("./utils")
 const semver = require("semver")
-const fetch = require("node-fetch")
-const { fetchPackage, NPM_REGISTRY } = require("./fetch")
+const { fetchPackage, NPM_REGISTRY, fetchPackageInfo } = require("./fetch")
 const url = require("url")
-
-async function getPinnedReference({name, reference}) {
-  // we only process range, e.g. ^1.5.2
-  // pinned version is a valid range in semver eyes
-  if(!isPinnedReference(reference)) {
-    const res = await fetch(url.resolve(NPM_REGISTRY, name))
-    const info = await res.json()
-    const versions = Object.keys(info.versions)
-    const maxSatisfying = semver.maxSatisfying(versions, reference)
-
-    if(maxSatisfying == null) {
-      throw new Error(`Could not find a version matching ${reference} for package ${name}`)
-    }
-
-    reference = maxSatisfying
-  }
-
-  return {name, reference}
-}
-
-async function getPackageDependencies({name, reference}) {
-  const packageBuffer = await fetchPackage({name, reference})
-  const packageJSON = JSON.parse(await readPackageJSONFromArchive(packageBuffer))
-  const dependencies = packageJSON.dependencies || {}
-  return Object.keys(dependencies).map(name => {
-    return {name, reference: dependencies[name]}
-  })
-}
 
 // recursive function
 // input: {name, reference, dependencies: [{name, reference}]}
 // output: {name, reference, expanded_dependencies: [{name, reference, dependencies}]}
-module.exports = async function getPackageDependencyTree(progress, {name, reference, dependencies}, available = new Map()) {
+async function getPackageDependencyTree(progress, {name, reference, dependencies}, available = new Map()) {
   return {
     name,
     reference,
@@ -59,13 +33,50 @@ module.exports = async function getPackageDependencyTree(progress, {name, refere
       progress.total += 1
 
       const pinnedDep = await getPinnedReference(dep)
-      const subDependencies = await getPackageDependencies(pinnedDep)
-
       progress.tick()
 
-      const subAvailable = new Map(available)
-      subAvailable.set(pinnedDep.name, pinnedDep.reference)
-      return getPackageDependencyTree(progress, Object.assign({}, pinnedDep, {dependencies: subDependencies}), subAvailable)
+      const subDependencies = await getPackageDependencies(pinnedDep)
+
+      available.set(pinnedDep.name, pinnedDep.reference)
+
+      return getPackageDependencyTree(progress, Object.assign({}, pinnedDep, {dependencies: subDependencies}), available)
     }))
   }
+}
+
+module.exports = getPackageDependencyTree
+
+/*----------  Private  ----------*/
+
+const pinnedReferenceCache = new Map()
+
+async function getPinnedReference({name, reference}) {
+  const cacheKey = name + "/" + reference
+
+  if(pinnedReferenceCache.get(cacheKey)) {
+    return {
+      name,
+      reference: pinnedReferenceCache.get(cacheKey),
+    }
+  }
+
+  if(!isPinnedReference(reference)) {
+    const info = await fetchPackageInfo(name)
+    const versions = Object.keys(info.versions)
+    const maxSatisfying = semver.maxSatisfying(versions, reference)
+
+    if(maxSatisfying == null) {
+      throw new Error(`Could not find a version matching ${reference} for package ${name}`)
+    }
+
+    reference = maxSatisfying
+    pinnedReferenceCache.set(cacheKey, reference)
+  }
+
+  return {name, reference}
+}
+
+async function getPackageDependencies({name, reference}) {
+  const info = await fetchPackageInfo(name)
+  return transformDependencies(info.versions[reference].dependencies)
 }

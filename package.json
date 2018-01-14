@@ -5,15 +5,22 @@
   "author": "CJ Ting <fatelovely1128@gmail.com>",
   "bin": "./cli.js",
   "license": "MIT",
+  "scripts": {
+    "test": "node test/*.js | tap-spec || true"
+  },
   "dependencies": {
+    "axios": "0.17.1",
     "chalk": "^2.1.0",
     "elapsed-time": "0.0.1",
     "fs-extra": "^4.0.1",
     "gunzip-maybe": "^1.4.1",
-    "node-fetch": "^1.7.2",
     "progress": "^2.0.0",
     "semver": "^5.4.1",
     "tar-fs": "^1.15.3",
     "tar-stream": "^1.5.4"
+  },
+  "devDependencies": {
+    "tap-spec": "4.1.1",
+    "tape": "4.8.0"
   }
 }

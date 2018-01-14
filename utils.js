@@ -6,19 +6,20 @@ const Progress = require("progress")
 const cp = require("child_process")
 const util = require("util")
 
-module.exports.exec = util.promisify(cp.exec)
+const exec = util.promisify(cp.exec)
 
-module.exports.isPinnedReference = ref => !semver.validRange(ref) && semver.valid(ref)
+const isPinnedReference = ref => semver.valid(ref) != null
 
-module.exports.readPackageJSONFromArchive = function(buffer) {
-  return readFileFromArchive("package.json", buffer, 1)
-}
+const readPackageJSONFromArchive = buffer => readFileFromArchive("package.json", buffer, 1)
 
-module.exports.extractNpmArchiveTo = function(buffer, target) {
-  return extractArchiveTo(buffer, target, 1)
-}
+const extractNPMArchiveTo = (buffer, target) => extractArchiveTo(buffer, target, 1)
 
-module.exports.trackProgress = async function(cb) {
+const transformDependencies = deps => Object.keys(deps || {}).map(name => ({
+  name,
+  reference: deps[name],
+}))
+
+async function trackProgress(cb) {
   const progress = new Progress(`:bar :current/:total (:elapseds)`, {
     width: 80,
     total: 1,
@@ -90,4 +91,13 @@ function getFileName(entryName, virtualPath) {
     entryName = entryName.substr(index + 1)
   }
   return entryName
+}
+
+module.exports = {
+  exec,
+  isPinnedReference,
+  readPackageJSONFromArchive,
+  extractNPMArchiveTo,
+  trackProgress,
+  transformDependencies,
 }

@@ -6,13 +6,13 @@ const path = require("path")
 const log = console.log
 const chalk = require("chalk")
 const fs = require("fs-extra")
-const { trackProgress } = require("./utils")
+const { trackProgress, transformDependencies } = require("./utils")
 const { fetchPackages } = require("./fetch")
 const ElapstedTime = require("elapsed-time")
 
-// for debug
 process.on("unhandledRejection", (reason, p) => {
-  console.log("Unhandled Rejection at: Promise", p, "reason:", reason)
+  console.log("unhandled promise rejection: ", p, "reason:", reason)
+  process.exit(1)
 })
 
 // print help info
@@ -32,30 +32,20 @@ if(!fs.existsSync(packageJSONPath)) {
   process.exit(1)
 }
 
-const packageJSON = require(path.resolve(cwd, "package.json"))
+const packageJSON = require(packageJSONPath)
 
-// process dependencies
-packageJSON.dependencies = Object.keys(packageJSON.dependencies || {}).map(name => {
-  return {
-    name,
-    reference: packageJSON.dependencies[name],
-  }
-})
-
-// process dev dependencies
-Object.keys(packageJSON.devDependencies || {}).forEach(name => {
-  packageJSON.dependencies.push({
-    name,
-    reference: packageJSON.devDependencies[name],
-  })
-})
+const dependencies = transformDependencies(packageJSON.dependencies)
+dependencies.push(...transformDependencies(packageJSON.devDependencies))
 
 const et = ElapstedTime.new().start()
 
 Promise.resolve()
   .then(() => {
     log("[1/3] 🔎  Resolving packages...")
-    return trackProgress(progress => getPackageDependencyTree(progress, packageJSON))
+    return trackProgress(progress => getPackageDependencyTree(progress, {
+      name: packageJSON.name,
+      dependencies,
+    }))
   })
   .then(optimizePackageTree)
   .then(async tree => {
@@ -63,9 +53,9 @@ Promise.resolve()
     await trackProgress(progress => fetchPackages(progress, tree))
     return tree
   })
-  .then(tree => {
+  .then(async tree => {
     log("[3/3] 🔗  Linking packages...")
-    return trackProgress(progress => linkPackages(progress, tree, cwd))
+    await trackProgress(progress => linkPackages(progress, tree, cwd))
   })
   .then(() => {
     log(` ✨  ${chalk.green("Done")} in ${et.getValue()}.`)

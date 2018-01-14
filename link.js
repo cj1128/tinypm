@@ -1,59 +1,9 @@
 const fs = require("fs-extra")
 const { fetchPackage } = require("./fetch")
 const { resolve, relative, join } = require("path")
-const { extractNpmArchiveTo, exec } = require("./utils")
+const { extractNPMArchiveTo, exec } = require("./utils")
 
-async function linkPackage(progress, {name, reference}, cwd) {
-  progress.total += 1
-  if(fs.existsSync(cwd)) {
-    progress.tick()
-    return
-  }
-
-  const buffer = await fetchPackage({name, reference})
-  await extractNpmArchiveTo(buffer, cwd)
-
-  // install binaries
-  const binTarget = join(cwd, "..", ".bin")
-  const dependencyPackage = require(`${cwd}/package.json`)
-  let bin = dependencyPackage.bin || {}
-  if(typeof bin === "string") {
-    bin = {[name]: bin}
-  }
-  for(const binName of Object.keys(bin)) {
-    const source = resolve(cwd, bin[binName])
-    const dest = `${binTarget}/${binName}`
-    // TODO: 对于`http-server`这个包
-    // 来说，tgz文件中，可执行的js文件是没有x权限的，使用`yarn`安装以后，却是有
-    // 执行权限的，这里我们修改源文件的权限，后面需要查明yarn是如何处理的
-    await fs.chmod(source, "755")
-    await fs.mkdirp(binTarget)
-    await fs.symlink(relative(binTarget, source), dest)
-  }
-
-  // execute scripts
-  if(dependencyPackage.scripts) {
-    for(const scriptName of ["preinstall", "install", "postinstall"]) {
-      const script = dependencyPackage.scripts[scriptName]
-      if(!script) continue
-      await exec(
-        script,
-        {
-          cwd: target,
-          env: Object.assign(
-            {},
-            process.env,
-            {
-              PATH: `${binTarget}:${process.env.PATH}`,
-            },
-          ),
-        },
-      )
-    }
-  }
-}
-
-module.exports = async function linkPackages(progress, {name, reference, dependencies}, cwd) {
+async function linkPackages(progress, {name, reference, dependencies}, cwd) {
   // not root package
   if(reference !== undefined) {
     await linkPackage(progress, {name, reference}, cwd)
@@ -64,4 +14,66 @@ module.exports = async function linkPackages(progress, {name, reference, depende
     const target = `${cwd}/node_modules/${name}`
     await linkPackages(progress, {name, reference, dependencies}, target)
   }))
+}
+
+module.exports = linkPackages
+
+/*----------  Private  ----------*/
+
+async function linkPackage(progress, {name, reference}, cwd) {
+  progress.total += 1
+
+  if(fs.existsSync(cwd)) {
+    progress.tick()
+    return
+  }
+
+  const buffer = await fetchPackage({name, reference})
+  await extractNPMArchiveTo(buffer, cwd)
+
+  // install binaries
+  const binDir = join(cwd, "..", ".bin")
+  const dependencyPackage = require(`${cwd}/package.json`)
+  let bin = dependencyPackage.bin || {}
+  if(typeof bin === "string") {
+    bin = {[name]: bin}
+  }
+
+  if(Object.keys(bin).length > 0) {
+    await fs.mkdirp(binDir)
+  }
+
+  for(const binName of Object.keys(bin)) {
+    const src = resolve(cwd, bin[binName])
+    const dest = `${binDir}/${binName}`
+    // need add executive permission manually
+    // yarn: https://github.com/yarnpkg/yarn/blob/master/src/package-linker.js#L41
+    if(!fs.existsSync(dest)) {
+      await fs.symlink(relative(binDir, src), dest)
+      await fs.chmod(dest, "755")
+    }
+  }
+
+  // execute hook scripts
+  if(dependencyPackage.scripts) {
+    for(const scriptName of ["preinstall", "install", "postinstall"]) {
+      const script = dependencyPackage.scripts[scriptName]
+      if(!script) continue
+      await exec(
+        script,
+        {
+          cwd: cwd,
+          env: Object.assign(
+            {},
+            process.env,
+            {
+              PATH: `${binDir}:${process.env.PATH}`,
+            },
+          ),
+        },
+      )
+    }
+  }
+
+  progress.tick()
 }
