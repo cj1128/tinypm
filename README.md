@@ -1,4 +1,6 @@
-![TinyPM Logo](http://ww1.sinaimg.cn/large/9bd18299gy1fnire3g1fgj207a02eglh)
+<p align="center">
+  <img alt="TinyPM Logo" src="http://ww1.sinaimg.cn/large/9bd18299gy1fnis9jk86nj20lu076q36" />
+</p>
 
 <h2 align="center">A tiny nodejs package manager built for fun</h2>
 
@@ -26,7 +28,11 @@ the whole process is divided into 3 steps implemented in corresponding js files.
 
 to speed up the processing, `tinypm` uses `/tmp/.tinypm` as cache dir.
 
-NOTE: as the original implementation, **the binary installation directory is wrong**. e.g. if package `A` depends on package `B` which has a binary called `cli-b`, tinypm will install `cli-b` to `root/node_modules/.bin/cli-b`, but the correct location is `root/node_modules/A/node_modules/.bin/cli-b`.
+## Notes
+
+as the original implementation, **the binary installation directory is wrong**. 
+
+e.g. if package `A` depends on package `B` which has a binary called `cli-b`, `tinypm` will install `cli-b` to `root/node_modules/.bin/cli-b`, but the correct location is `root/node_modules/A/node_modules/.bin/cli-b`.
 
 ## License
 
