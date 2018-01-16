@@ -15,12 +15,18 @@ process.on("unhandledRejection", (reason, p) => {
   process.exit(1)
 })
 
+const helpInfo = `
+  TinyPM, a tiny nodejs pacakge manager built for fun 😛
+
+  Usage: just type \`tinypm\` and you are done
+
+  note, cache directory is /tmp/.tinypm
+`
+
 // print help info
 const arg = process.argv[2]
 if(arg === "help" || arg === "-h" || arg === "--help") {
-  log(chalk.cyan("tinypm: ") + "a tiny nodejs package manager built for fun 😛")
-  log("usage: just type " + chalk.cyan("tinypm") + " to install all your packages")
-  log("cache directory is /tmp/.tinypm")
+  log(helpInfo)
   process.exit(0)
 }
 
