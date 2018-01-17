@@ -8,6 +8,14 @@
   <a href="https://mit-license.org/2018">
     <img src="http://img.shields.io/badge/license-MIT-blue.svg?style=flat-square"> 
   </a>
+
+  <a href="https://www.npmjs.com/package/tinypm">
+    <img src="https://img.shields.io/npm/v/tinypm.svg" />
+  </a>
+
+  <a href="https://travis-ci.org/fate-lovely/tinypm">
+    <img src="https://img.shields.io/travis/fate-lovely/tinypm.svg"> 
+  </a>
 </p>
 
 ## Intro
@@ -15,6 +23,12 @@
 this project is heavily inspired by the awesome post: [Let's Dev: A Package Manager](https://yarnpkg.com/blog/2017/07/11/lets-dev-a-package-manager/) but reimplement it from scratch.
 
 It has a clean code base, add some tests and remove `babel-node` requirement compared to original implementation.
+
+## Install
+
+```bash
+yarn global add tinypm
+```
 
 ## Usage
 

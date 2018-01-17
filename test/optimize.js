@@ -41,12 +41,7 @@ test("optimize", t => {
       {
         name: "c",
         reference: "c1",
-        dependencies: [
-          {
-            name: "e",
-            reference:
-          }
-        ],
+        dependencies: [],
       },
     ],
   }

@@ -7,6 +7,10 @@
   "scripts": {
     "test": "node test/*.js | tap-spec || true"
   },
+  "repository": {
+    "type" : "git",
+    "url" : "https://github.com/fate-lovely/tinypm.git"
+  },
   "dependencies": {
     "axios": "0.17.1",
     "chalk": "^2.1.0",
