@@ -1,5 +1,5 @@
 <p align="center">
-  <img alt="TinyPM Logo" src="http://ww1.sinaimg.cn/large/9bd18299gy1fnis9jk86nj20lu076q36" />
+  <img alt="TinyPM Logo" src="http://ww1.sinaimg.cn/large/9b85365dgy1fnjev4v3j6j208a02q746" />
 </p>
 
 <h2 align="center">A tiny nodejs package manager built for fun</h2>
@@ -12,7 +12,9 @@
 
 ## Intro
 
-this project is heavily inspired by the awesome post [Let's Dev: A Package Manager](https://yarnpkg.com/blog/2017/07/11/lets-dev-a-package-manager/) but reimplement from scratch. It has a clean code base, add some tests and remove `babel-node` requirement compared to original implementation.
+this project is heavily inspired by the awesome post: [Let's Dev: A Package Manager](https://yarnpkg.com/blog/2017/07/11/lets-dev-a-package-manager/) but reimplement it from scratch.
+
+It has a clean code base, add some tests and remove `babel-node` requirement compared to original implementation.
 
 ## Usage
 

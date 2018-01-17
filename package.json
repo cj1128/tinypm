@@ -1,7 +1,6 @@
 {
   "name": "tinypm",
   "version": "1.0.0",
-  "main": "index.js",
   "author": "CJ Ting <fatelovely1128@gmail.com>",
   "bin": "./cli.js",
   "license": "MIT",
